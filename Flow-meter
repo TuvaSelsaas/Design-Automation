@@ -222,24 +222,27 @@ class FlowValve():
        
 
         # SENSOR PIPE ------------------------------------------------------------------
+        """This part creates the sensor pipe for the flow meter. It is created on an angled plane."""
+        "Construction Plane"
         const_plane_sp_input = new_comp.constructionPlanes.createInput()
         const_plane_sp_input.setByAngle(linearEntity=new_comp.xConstructionAxis, angle=adsk.core.ValueInput.createByReal(self.theta), planarEntity=new_comp.xYConstructionPlane)
         const_plane_sp = new_comp.constructionPlanes.add(const_plane_sp_input)
-
+        "Sketch"
         sketch_sp = new_comp.sketches.add(const_plane_sp)
         center_sp = sketch_sp.modelToSketchSpace(center_global)
-
         circles_sp = sketch_sp.sketchCurves.sketchCircles
         circle_sp_o = circles_sp.addByCenterRadius(centerPoint=center_sp, radius=self._d/2)
         circle_sp_i = circles_sp.addByCenterRadius(centerPoint=circle_sp_o.centerSketchPoint, radius=self._d/2-self._d/10)
-
+        "Extrude"
         pipe_sp_profile = sketch_sp.profiles.item(0)  # get the pipe profile (profile between inner and outer circle)
         ext_pipe_sp_input = new_comp.features.extrudeFeatures.createInput(profile=pipe_sp_profile, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
         ext_pipe_sp_input.setDistanceExtent(isSymmetric=True, distance=adsk.core.ValueInput.createByReal(self.P/2+70))
         bodyOne = new_comp.features.extrudeFeatures.add(ext_pipe_sp_input)
 
         # SENSOR PIPE SPOOL PIECE ------------------------------------------------------------------
-    
+        """This part creates the spool pieces of the sensor pipe. It is extended as 
+        new bodies at the ends of the pipe."""
+        #Body
         body = bodyOne.bodies.item(0)
         circularFace = None
         for face in body.faces:
@@ -247,86 +250,76 @@ class FlowValve():
             if geom.surfaceType == adsk.core.SurfaceTypes.CylinderSurfaceType:
                 circularFace = face
                 break
-        
-        #Construction axis
+        "Top spool piece"
+        #onstruction Axis
         const_axis_sp_input = new_comp.constructionAxes.createInput()
         const_axis_sp_input.setByCircularFace(circularFace)
         const_axis_sp = new_comp.constructionAxes.add(const_axis_sp_input)
-        #Construction plane
+        #Construction Offset Plane
         const_offsetPlane_input = new_comp.constructionPlanes.createInput()
         const_offsetPlane_input.setByOffset(planarEntity=pipe_sp_profile, offset=adsk.core.ValueInput.createByReal(self.P/2+70))
         const_offsetPlane = new_comp.constructionPlanes.add(const_offsetPlane_input)
-
-        #Construction point set by an edge and a plane - not necessary  for this operation
-        #const_point_sp_input = new_comp.constructionPoints.createInput()
-        #const_point_sp_input.setByEdgePlane(const_axis_sp, const_offsetPlane)
-        #const_point_sp = new_comp.constructionPoints.add(const_point_sp_input)
-
-        #Center point
+        #Centerpoint
         center_sp = adsk.core.Point3D.create(0, 0, 0)
-        #Create sketch
+        #Sketch
         sketch_SP = new_comp.sketches.add(const_offsetPlane)
         circle_SP = sketch_SP.sketchCurves.sketchCircles
         circle_SP_o = circle_SP.addByCenterRadius(centerPoint=center_sp, radius=self._d-self._d/10)
         circle_SP_i = circle_SP.addByCenterRadius(centerPoint=center_sp, radius=self._d/2-self._d/10)
-        #Extrude sketch
+        #Extrude
         pipe_SP_profile = sketch_SP.profiles.item(0)
         ext_pipe_SP_input = new_comp.features.extrudeFeatures.createInput(profile=pipe_SP_profile, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
         ext_pipe_SP_input.setDistanceExtent(isSymmetric=True, distance=adsk.core.ValueInput.createByReal(1))
         bodyTwo = new_comp.features.extrudeFeatures.add(ext_pipe_SP_input)
-
+        #Sketch
         parent_sketch = sketch_SP.sketchCurves.sketchCircles.addByCenterRadius(centerPoint=adsk.core.Point3D.create(0,self._d-5,0), radius=2)                  #item(2)
-
+        #Extrude Cut
         spool_profile = sketch_SP.profiles.item(2)
         ext_spool_hole = new_comp.features.extrudeFeatures.createInput(profile=spool_profile, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
         ext_spool_hole.setDistanceExtent(isSymmetric=True, distance=adsk.core.ValueInput.createByReal(0.2*self._d))
         circle_cut = new_comp.features.extrudeFeatures.add(ext_spool_hole)
-
+        #Circular pattern
         CircularPatterns = new_comp.features.circularPatternFeatures
         inputEntitiesCollection = adsk.core.ObjectCollection.create()
         inputEntitiesCollection.add(circle_cut)
-       
         inputAxis = const_axis_sp
         CircularPatternInput = CircularPatterns.createInput(inputEntitiesCollection, inputAxis)
         CircularPatternInput.quantity = adsk.core.ValueInput.createByReal(self.H)
         CircularPatternInput.totalAngle = adsk.core.ValueInput.createByString('360 deg')
         CircularPatternInput.isSymmetric = False
         CircularPattern = CircularPatterns.add(CircularPatternInput)
-
-
-
+        "Bottom spool piece"
         #Construction axis
         const_axis_sp_input = new_comp.constructionAxes.createInput()
         const_axis_sp_input.setByCircularFace(circularFace)
         const_axis_sp = new_comp.constructionAxes.add(const_axis_sp_input)
-        #Construction plane
+        #Cosntruction Offset Plane
         const_offsetPlane_input = new_comp.constructionPlanes.createInput()
         const_offsetPlane_input.setByOffset(planarEntity=pipe_sp_profile, offset=adsk.core.ValueInput.createByReal(-self.P/2-70))
         const_offsetPlane = new_comp.constructionPlanes.add(const_offsetPlane_input)
-        #Center point
+        #Center Point
         center_sp = adsk.core.Point3D.create(0, 0, 0)
-        #Create sketch
+        #Sketch
         sketch_SP = new_comp.sketches.add(const_offsetPlane)
         circle_SP = sketch_SP.sketchCurves.sketchCircles
         circle_SP_o = circle_SP.addByCenterRadius(centerPoint=center_sp, radius=self._d-self._d/10)
         circle_SP_i = circle_SP.addByCenterRadius(centerPoint=center_sp, radius=self._d/2-self._d/10)
-        #Extrude sketch
+        #Extrude
         pipe_SP_profile = sketch_SP.profiles.item(0)
         ext_pipe_SP_input = new_comp.features.extrudeFeatures.createInput(profile=pipe_SP_profile, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
         ext_pipe_SP_input.setDistanceExtent(isSymmetric=True, distance=adsk.core.ValueInput.createByReal(1))
         bodyTwo = new_comp.features.extrudeFeatures.add(ext_pipe_SP_input)
-
-        parent_sketch = sketch_SP.sketchCurves.sketchCircles.addByCenterRadius(centerPoint=adsk.core.Point3D.create(0,self._d-5,0), radius=2)                  #item(2)
-
+        #Sketch
+        parent_sketch = sketch_SP.sketchCurves.sketchCircles.addByCenterRadius(centerPoint=adsk.core.Point3D.create(0,self._d-5,0), radius=2)                 
+        #Extrude Cut
         spool_profile = sketch_SP.profiles.item(2)
         ext_spool_hole = new_comp.features.extrudeFeatures.createInput(profile=spool_profile, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
         ext_spool_hole.setDistanceExtent(isSymmetric=True, distance=adsk.core.ValueInput.createByReal(0.2*self._d))
         circle_cut = new_comp.features.extrudeFeatures.add(ext_spool_hole)
-
+        #Circular Pattern
         CircularPatterns = new_comp.features.circularPatternFeatures
         inputEntitiesCollection = adsk.core.ObjectCollection.create()
         inputEntitiesCollection.add(circle_cut)
-       
         inputAxis = const_axis_sp
         CircularPatternInput = CircularPatterns.createInput(inputEntitiesCollection, inputAxis)
         CircularPatternInput.quantity = adsk.core.ValueInput.createByReal(self.H)
@@ -334,115 +327,96 @@ class FlowValve():
         CircularPatternInput.isSymmetric = False
         CircularPattern = CircularPatterns.add(CircularPatternInput)
         
-
         # MAIN PIPE --------------------------------------------------------------------
-        # Create sketch on xY construction plane and center point for sketch
+        """This part creates the main pipe of the flow meter which is on the xy plane."""
+        #Sketch
         sketch_mp = new_comp.sketches.add(new_comp.xYConstructionPlane)
         center_mp = sketch_mp.modelToSketchSpace(center_global)
-       
-        # Draw circles
         circles_mp = sketch_mp.sketchCurves.sketchCircles
-        # Draw outer circle
         circle_mp_o = circles_mp.addByCenterRadius(centerPoint=center_mp, radius=self.D/2)
-        # Draw inner circle
         circle_mp_i = circles_mp.addByCenterRadius(centerPoint=circle_mp_o.centerSketchPoint, radius=self.D/2-self.D/10)
-
-        # Create object collection of profiles and extrude cut
+        #Extrude
         profiles_mp = adsk.core.ObjectCollection.create()
         [profiles_mp.add(profile) for profile in sketch_mp.profiles]
         ext_pipe_mp_cut_input = new_comp.features.extrudeFeatures.createInput(profile=profiles_mp, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
-        # ext_pipe_mp_cut_input.setAllExtent(direction=adsk.fusion.ExtentDirections.SymmetricExtentDirection)  # does not extrude symmetric for some reason...
         ext_pipe_mp_cut_input.setDistanceExtent(isSymmetric=True, distance=adsk.core.ValueInput.createByReal(self.L/2))
         new_comp.features.extrudeFeatures.add(ext_pipe_mp_cut_input)
-
-        # Extrude join pipe profile
+        #Join (main pipe and sensor pipe)
         pipe_mp_profile = sketch_mp.profiles.item(0)  # get the pipe profile (profile between inner and outer circle)
         ext_pipe_mp_join_input = new_comp.features.extrudeFeatures.createInput(profile=pipe_mp_profile, operation=adsk.fusion.FeatureOperations.JoinFeatureOperation)
         ext_pipe_mp_join_input.setDistanceExtent(isSymmetric=True, distance=adsk.core.ValueInput.createByReal(self.L/2))
         new_comp.features.extrudeFeatures.add(ext_pipe_mp_join_input)
-        # ------------------------------------------------------------------------------
-
-
-        # Extrude center profile of SENSOR PIPE, to "open" MAIN PIPE
+        #Extrude Cut
         pipe_sp_profile_i = sketch_sp.profiles.item(1)  # get the center profile (profile by inner circle)
         ext_pipe_sp_i_input = new_comp.features.extrudeFeatures.createInput(profile=pipe_sp_profile_i, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
-        # ext_pipe_sp_i_input.setAllExtent(direction=adsk.fusion.ExtentDirections.SymmetricExtentDirection)  # does not extrude symmetric for some reason...
         ext_pipe_sp_i_input.setDistanceExtent(isSymmetric=True, distance=adsk.core.ValueInput.createByReal(self.P/2 + 70*3))
         new_comp.features.extrudeFeatures.add(ext_pipe_sp_i_input)
-
-
-        # SPOOL PIECE 1: ------------------------------------------------------------------
+        "Spool piece right"
+        #Construction Offset Plane
         const_offsetPlane_input = new_comp.constructionPlanes.createInput()
         const_offsetPlane_input.setByOffset(planarEntity=new_comp.xYConstructionPlane, offset=adsk.core.ValueInput.createByReal(self.L/2))
         const_offsetPlane = new_comp.constructionPlanes.add(const_offsetPlane_input)
-
+        #Sketch
         sketch_spool = new_comp.sketches.add(const_offsetPlane)
         center_spool = sketch_spool.modelToSketchSpace(adsk.core.Point3D.create(0,0,self.L/2))
         circle_spool = sketch_spool.sketchCurves.sketchCircles
         circle_spool_o = circle_spool.addByCenterRadius(centerPoint=center_spool, radius=self.D)                                                                    #item(0)
         circle_spool_i = circle_spool.addByCenterRadius(centerPoint=circle_spool_o.centerSketchPoint, radius=self.D/2-self.D/10)                                    #item(1)
-       
+        #Extrude
         spool_profile = sketch_spool.profiles.item(0)
         ext_spool_input = new_comp.features.extrudeFeatures.createInput(profile=spool_profile, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
         ext_spool_input.setDistanceExtent(isSymmetric=False, distance=adsk.core.ValueInput.createByReal(0.2*self.D))
         new_comp.features.extrudeFeatures.add(ext_spool_input)
-
+        #Sketch
         parent_sketch = sketch_spool.sketchCurves.sketchCircles.addByCenterRadius(centerPoint=adsk.core.Point3D.create(0,self.D-self.D/5,0), radius=self.RH)                  #item(2)
-
+        #Extrude Cut
         spool_profile = sketch_spool.profiles.item(2)
         ext_spool_hole = new_comp.features.extrudeFeatures.createInput(profile=spool_profile, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
         ext_spool_hole.setDistanceExtent(isSymmetric=True, distance=adsk.core.ValueInput.createByReal(0.2*self.D))
         circle_cut = new_comp.features.extrudeFeatures.add(ext_spool_hole)
-
         app = adsk.core.Application.get()
         ui = app.userInterface
         design = app.activeProduct
-        #rootComp = adsk.fusion.Component.cast(design.rootComponent)
-
+        #Circular Pattern
         CircularPatterns = new_comp.features.circularPatternFeatures
         inputEntitiesCollection = adsk.core.ObjectCollection.create()
-        inputEntitiesCollection.add(circle_cut)
-       
+        inputEntitiesCollection.add(circle_cut)    
         inputAxis = new_comp.zConstructionAxis
         CircularPatternInput = CircularPatterns.createInput(inputEntitiesCollection, inputAxis)
         CircularPatternInput.quantity = adsk.core.ValueInput.createByReal(self.H)
         CircularPatternInput.totalAngle = adsk.core.ValueInput.createByString('360 deg')
         CircularPatternInput.isSymmetric = False
         CircularPattern = CircularPatterns.add(CircularPatternInput)
-
-
-        # SPOOL PIECE 2: ------------------------------------------------------------------
+        "Spool piece left"
+        #Construction offset Plane
         const_offsetPlane_input = new_comp.constructionPlanes.createInput()
         const_offsetPlane_input.setByOffset(planarEntity=new_comp.xYConstructionPlane, offset=adsk.core.ValueInput.createByReal(self.L/2))
         const_offsetPlane = new_comp.constructionPlanes.add(const_offsetPlane_input)
-
+        #Sketch
         sketch_spool = new_comp.sketches.add(const_offsetPlane)
         center_spool = sketch_spool.modelToSketchSpace(adsk.core.Point3D.create(0,0,-self.L/2))
         circle_spool = sketch_spool.sketchCurves.sketchCircles
         circle_spool_o = circle_spool.addByCenterRadius(centerPoint=center_spool, radius=self.D)                                                                    #item(0)
-        circle_spool_i = circle_spool.addByCenterRadius(centerPoint=circle_spool_o.centerSketchPoint, radius=self.D/2-self.D/10)                                    #item(1)
-       
-           
+        circle_spool_i = circle_spool.addByCenterRadius(centerPoint=circle_spool_o.centerSketchPoint, radius=self.D/2-self.D/10)                                    #item(1)  
+        #Extrude
         spool_profile = sketch_spool.profiles.item(0)
         ext_spool_input = new_comp.features.extrudeFeatures.createInput(profile=spool_profile, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
         ext_spool_input.setDistanceExtent(isSymmetric=False, distance=adsk.core.ValueInput.createByReal(-0.2*self.D))
         new_comp.features.extrudeFeatures.add(ext_spool_input)
-
+        #Sketch
         parent_sketch_2 = sketch_spool.sketchCurves.sketchCircles.addByCenterRadius(centerPoint=adsk.core.Point3D.create(0,self.D-self.D/5,-self.L), radius=self.RH)                  #item(2)
-
+        #Extrude Cut
         spool_profile = sketch_spool.profiles.item(2)
         ext_spool_hole = new_comp.features.extrudeFeatures.createInput(profile=spool_profile, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
         ext_spool_hole.setDistanceExtent(isSymmetric=True, distance=adsk.core.ValueInput.createByReal(0.2*self.D))
         circle_cut = new_comp.features.extrudeFeatures.add(ext_spool_hole)
-
         app = adsk.core.Application.get()
         ui = app.userInterface
         design = app.activeProduct
-
+        #Circular Pattern
         CircularPatterns = new_comp.features.circularPatternFeatures
         inputEntitiesCollection = adsk.core.ObjectCollection.create()
         inputEntitiesCollection.add(circle_cut)
-       
         inputAxis = new_comp.zConstructionAxis
         CircularPatternInput = CircularPatterns.createInput(inputEntitiesCollection, inputAxis)
         CircularPatternInput.quantity = adsk.core.ValueInput.createByReal(self.H)
@@ -450,29 +424,33 @@ class FlowValve():
         CircularPatternInput.isSymmetric = False
         CircularPattern = CircularPatterns.add(CircularPatternInput)
 
-
         # BALL VALVE ------------------------------------------------------------------------------------------
         """This part creates a simple constructed ball valve. It consists of five parts: 
         Bottom and Top spool piece, pipe, ball and handle."""
-
         "Bottom spool piece"
+        #Construction Offset Plane
         const_offsetPlane_input = new_comp.constructionPlanes.createInput()
         const_offsetPlane_input.setByOffset(planarEntity=pipe_sp_profile, offset=adsk.core.ValueInput.createByReal(self.P/2+71))
         const_offsetPlane = new_comp.constructionPlanes.add(const_offsetPlane_input)
         center_sp = adsk.core.Point3D.create(0, 0, 0)
+        #Sketch
         sketch_SP = new_comp.sketches.add(const_offsetPlane)
         circle_SP = sketch_SP.sketchCurves.sketchCircles
         circle_SP_o = circle_SP.addByCenterRadius(centerPoint=center_sp, radius=self._d-self._d/10)
         circle_SP_i = circle_SP.addByCenterRadius(centerPoint=center_sp, radius=self._d/2-self._d/10)
+        #Extrude
         pipe_SP_profile = sketch_SP.profiles.item(0)
         ext_pipe_SP_input = new_comp.features.extrudeFeatures.createInput(profile=pipe_SP_profile, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
         ext_pipe_SP_input.setDistanceExtent(isSymmetric=True, distance=adsk.core.ValueInput.createByReal(1))
         bodyTwo = new_comp.features.extrudeFeatures.add(ext_pipe_SP_input)
+        #Sketch
         parent_sketch = sketch_SP.sketchCurves.sketchCircles.addByCenterRadius(centerPoint=adsk.core.Point3D.create(0,self._d-5,0), radius=2)                  #item(2)
+        #Extrude Cut
         spool_profile = sketch_SP.profiles.item(2)
         ext_spool_hole = new_comp.features.extrudeFeatures.createInput(profile=spool_profile, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
         ext_spool_hole.setDistanceExtent(isSymmetric=True, distance=adsk.core.ValueInput.createByReal(0.2*self._d))
         circle_cut = new_comp.features.extrudeFeatures.add(ext_spool_hole)
+        #Circular Pattern
         CircularPatterns = new_comp.features.circularPatternFeatures
         inputEntitiesCollection = adsk.core.ObjectCollection.create()
         inputEntitiesCollection.add(circle_cut)
@@ -482,64 +460,77 @@ class FlowValve():
         CircularPatternInput.totalAngle = adsk.core.ValueInput.createByString('360 deg')
         CircularPatternInput.isSymmetric = False
         CircularPattern = CircularPatterns.add(CircularPatternInput)
-
         "Pipe"
+        #Construction Offset Plane
         const_offsetPlane_input = new_comp.constructionPlanes.createInput()
         const_offsetPlane_input.setByOffset(planarEntity=pipe_sp_profile, offset=adsk.core.ValueInput.createByReal(self.P/2+72))
         const_offsetPlane = new_comp.constructionPlanes.add(const_offsetPlane_input)
+        #Center Point
         center_sp = adsk.core.Point3D.create(0, 0, 0)
+        #Sketch
         sketch_SP = new_comp.sketches.add(const_offsetPlane)
         circle_SP = sketch_SP.sketchCurves.sketchCircles
         circle_SP_o = circle_SP.addByCenterRadius(centerPoint=center_sp, radius=self._d/2)
         circle_SP_i = circle_SP.addByCenterRadius(centerPoint=center_sp, radius=self._d/2-self._d/10)
+        #Extrude
         pipe_SP_profile = sketch_SP.profiles.item(0)
         ext_pipe_SP_input = new_comp.features.extrudeFeatures.createInput(profile=pipe_SP_profile, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
         ext_pipe_SP_input.setDistanceExtent(isSymmetric=True, distance=adsk.core.ValueInput.createByReal(30))
         bodyBallValvePipe = new_comp.features.extrudeFeatures.add(ext_pipe_SP_input)
-
         "Ball"
+        #Construction Offset Plane
         const_offsetPlane_input = new_comp.constructionPlanes.createInput()
         const_offsetPlane_input.setByOffset(planarEntity=pipe_sp_profile, offset=adsk.core.ValueInput.createByReal(self.P/2+87))
         const_offsetPlane = new_comp.constructionPlanes.add(const_offsetPlane_input)
+        #Center Point
         center_sp = adsk.core.Point3D.create(0, 0, 0)
+        #Sketch
         sketch_SP = new_comp.sketches.add(const_offsetPlane)
         circle_SP = sketch_SP.sketchCurves.sketchCircles
         circle_SP_Ball = circle_SP.addByCenterRadius(centerPoint=center_sp, radius=self._d/2-self._d/10)
         line_halfCircle = sketch_SP.sketchCurves.sketchLines
         line_halfCircle_ball = line_halfCircle.addByTwoPoints(adsk.core.Point3D.create(self._d/2-self._d/10, 0, 0), adsk.core.Point3D.create(-self._d/2+self._d/10, 0, 0))
+        #Revolve
         halfCircle_profile = sketch_SP.profiles.item(0)
         revolve_ball = new_comp.features.revolveFeatures.createInput(profile=halfCircle_profile, axis=line_halfCircle_ball, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)        
         revolve_ball.setAngleExtent(False, angle=adsk.core.ValueInput.createByString('360 deg')) 
         bodyBallValveBall = new_comp.features.revolveFeatures.add(revolve_ball)
+        #Sketch
         sketch_SP = new_comp.sketches.add(const_offsetPlane)
         circle_SP = sketch_SP.sketchCurves.sketchCircles
         circle_cut_ball = circle_SP.addByCenterRadius(centerPoint=center_sp, radius=self._d/2-self._d/4)
+        #Extrude Cut
         circleCut_profile = sketch_SP.profiles.item(0)
         ext_cut_ball = new_comp.features.extrudeFeatures.createInput(profile=circleCut_profile, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
         ext_cut_ball.setDistanceExtent(isSymmetric=True, distance=adsk.core.ValueInput.createByReal(self._d/2))
         bodyBallValveBallHole = new_comp.features.extrudeFeatures.add(ext_cut_ball)
-
         "Handle"
         
-
         "Top spool piece"
+        #Construction Offset Plane
         const_offsetPlane_input = new_comp.constructionPlanes.createInput()
         const_offsetPlane_input.setByOffset(planarEntity=pipe_sp_profile, offset=adsk.core.ValueInput.createByReal(self.P/2+102))
         const_offsetPlane = new_comp.constructionPlanes.add(const_offsetPlane_input)
+        #Center Point
         center_sp = adsk.core.Point3D.create(0, 0, 0)
+        #Sketch
         sketch_SP = new_comp.sketches.add(const_offsetPlane)
         circle_SP = sketch_SP.sketchCurves.sketchCircles
         circle_SP_o = circle_SP.addByCenterRadius(centerPoint=center_sp, radius=self._d-self._d/10)
         circle_SP_i = circle_SP.addByCenterRadius(centerPoint=center_sp, radius=self._d/2-self._d/10)
+        #Extrude
         pipe_SP_profile = sketch_SP.profiles.item(0)
         ext_pipe_SP_input = new_comp.features.extrudeFeatures.createInput(profile=pipe_SP_profile, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
         ext_pipe_SP_input.setDistanceExtent(isSymmetric=True, distance=adsk.core.ValueInput.createByReal(1))
         bodyTwo = new_comp.features.extrudeFeatures.add(ext_pipe_SP_input)
+        #Sketch
         parent_sketch = sketch_SP.sketchCurves.sketchCircles.addByCenterRadius(centerPoint=adsk.core.Point3D.create(0,self._d-5,0), radius=2)                  #item(2)
+        #Extrude Cut
         spool_profile = sketch_SP.profiles.item(2)
         ext_spool_hole = new_comp.features.extrudeFeatures.createInput(profile=spool_profile, operation=adsk.fusion.FeatureOperations.CutFeatureOperation)
         ext_spool_hole.setDistanceExtent(isSymmetric=True, distance=adsk.core.ValueInput.createByReal(0.2*self._d))
         circle_cut = new_comp.features.extrudeFeatures.add(ext_spool_hole)
+        #Circular Pattern
         CircularPatterns = new_comp.features.circularPatternFeatures
         inputEntitiesCollection = adsk.core.ObjectCollection.create()
         inputEntitiesCollection.add(circle_cut)
@@ -549,8 +540,6 @@ class FlowValve():
         CircularPatternInput.totalAngle = adsk.core.ValueInput.createByString('360 deg')
         CircularPatternInput.isSymmetric = False
         CircularPattern = CircularPatterns.add(CircularPatternInput)
-
-
 # ------------------------------------------------------------------------------
 
 def run(context):
