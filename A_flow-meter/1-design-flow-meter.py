@@ -1,4 +1,4 @@
-# Author - Tuva Carey Selsaas
+# Author - Tuva Carey Selsaas & Maria Sol Helvig
 # Parts of the script is borrowed from Sindre E. Hinderaker and a project in TIN200 done by Trym Jensen, Maria Sol Helvig and Tuva Carey Selsaas
 # Description - Generator for creating customized flow-valves
 
